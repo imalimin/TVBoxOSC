@@ -98,6 +98,7 @@ public class VodController extends BaseController {
     TextView mPlayerTimeStartBtn;
     TextView mPlayerTimeSkipBtn;
     TextView mPlayerTimeStepBtn;
+    TextView mInfoView;
 
     @Override
     protected void initView() {
@@ -122,6 +123,7 @@ public class VodController extends BaseController {
         mPlayerTimeStartBtn = findViewById(R.id.play_time_start);
         mPlayerTimeSkipBtn = findViewById(R.id.play_time_end);
         mPlayerTimeStepBtn = findViewById(R.id.play_time_step);
+        mInfoView = findViewById(R.id.infoView);
 
         mGridView.setLayoutManager(new V7LinearLayoutManager(getContext(), 0, false));
         ParseAdapter parseAdapter = new ParseAdapter();
@@ -489,6 +491,7 @@ public class VodController extends BaseController {
             case VideoView.STATE_IDLE:
                 break;
             case VideoView.STATE_PLAYING:
+                mInfoView.setText(String.format("%dx%d", mControlWrapper.getVideoSize()[0], mControlWrapper.getVideoSize()[1]));
                 startProgress();
                 break;
             case VideoView.STATE_PAUSED:
