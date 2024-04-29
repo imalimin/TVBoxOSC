@@ -1,12 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 30
+    namespace 'com.github.tvbox.osc'
+    compileSdkVersion Integer.parseInt(target_version)
 
     defaultConfig {
-        applicationId 'com.github.tvbox.osc'
-        minSdkVersion 16
-        targetSdkVersion 26
+        applicationId namespace
+        minSdkVersion Integer.parseInt(min_version)
+        targetSdkVersion Integer.parseInt(target_version)
         versionCode 1
         versionName '1.0.0'
         multiDexEnabled true
