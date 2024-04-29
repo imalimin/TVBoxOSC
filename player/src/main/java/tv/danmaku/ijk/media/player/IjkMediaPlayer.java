@@ -1291,11 +1291,13 @@ public final class IjkMediaPlayer extends AbstractMediaPlayer {
     public static void setDotPort(boolean open, int p) {
         dotOpen = open;
         dotPort = p;
+        Log.i("aliminabc", "setDotPort dotOpen=" + dotOpen + ", dotPort=" + dotPort);
     }
 
     public static void toggleDotPort(boolean open) {
         dotOpen = open;
         if (mIsNativeInitialized) {
+            Log.i("aliminabc", "toggleDotPort dotOpen=" + dotOpen + ", dotPort=" + dotPort);
             native_setDot(dotOpen ? dotPort : 0);
         }
     }
