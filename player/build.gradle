@@ -32,6 +32,11 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
+    sourceSets.main {
+        if (!Boolean.parseBoolean(use_my_ijk)) {
+            java.srcDirs += "src/main/ijk"
+        }
+    }
 }
 
 dependencies {
@@ -43,5 +48,8 @@ dependencies {
     api "com.google.android.exoplayer:extension-rtmp:2.14.2"
     api "com.google.android.exoplayer:extension-okhttp:2.14.2"
     api 'xyz.doikki.android.dkplayer:dkplayer-ui:3.3.5'
-//    api project(":ijkplayer-java")
+    if (Boolean.parseBoolean(use_my_ijk)) {
+        api project(path: ':ijkplayer-arm64')
+        api project(path: ':ijkplayer-java')
+    }
 }
