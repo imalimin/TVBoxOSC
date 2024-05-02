@@ -710,7 +710,7 @@ public class PlayActivity extends BaseActivity {
                 public void run() {
                     JSONObject rs = ApiConfig.get().jsonExtMix(parseFlag + "111", pb.getUrl(), finalExtendName, jxs, webUrl);
                     if (rs == null || !rs.has("url")) {
-                        errorWithRetry("解析错误", false);
+                        runOnUiThread(() -> errorWithRetry("解析错误", false));
                     } else {
                         if (rs.has("parse") && rs.optInt("parse", 0) == 1) {
                             runOnUiThread(new Runnable() {

@@ -274,6 +274,10 @@ public class SearchActivity extends BaseActivity {
 
     private void refreshQRCode() {
         String address = ControlManager.get().getAddress(false);
+        if (address == null) {
+            tvAddress.setText(String.format("请重试\n%s", address));
+            return;
+        }
         tvAddress.setText(String.format("远程搜索使用手机/电脑扫描下面二维码或者直接浏览器访问地址\n%s", address));
         ivQRCode.setImageBitmap(QRCodeGen.generateBitmap(address, 300, 300));
     }

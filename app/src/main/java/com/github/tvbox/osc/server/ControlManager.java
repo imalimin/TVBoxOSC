@@ -46,11 +46,14 @@ public class ControlManager {
         mContext = context;
     }
 
-    public String getAddress(boolean local) {
+    public synchronized String getAddress(boolean local) {
+        if (mServer == null) {
+            return null;
+        }
         return local ? mServer.getLoadAddress() : mServer.getServerAddress();
     }
 
-    public void startServer() {
+    public synchronized void startServer() {
         if (mServer != null) {
             return;
         }
