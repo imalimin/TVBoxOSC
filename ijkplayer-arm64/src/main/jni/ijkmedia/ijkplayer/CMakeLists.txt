@@ -36,18 +36,18 @@ aux_source_directory(${PROJECT_SOURCE_DIR}/ijkavformat SOURCES_FORMAT)
 aux_source_directory(${PROJECT_SOURCE_DIR}/ijkavutil SOURCES_UTIL)
 aux_source_directory(${PROJECT_SOURCE_DIR}/pipeline SOURCES_PIP)
 
-list(APPEND SOURCES_ROOT ${SOURCES_ROOT})
-list(APPEND SOURCES_ROOT ${SOURCES_ANDROID})
-list(APPEND SOURCES_ROOT ${SOURCES_ANDROID_PIP})
-list(APPEND SOURCES_ROOT ${SOURCES_FORMAT})
-list(APPEND SOURCES_ROOT ${SOURCES_UTIL})
-list(APPEND SOURCES_ROOT ${SOURCES_PIP})
+list(APPEND SOURCES_SETS ${SOURCES_ROOT})
+list(APPEND SOURCES_SETS ${SOURCES_ANDROID})
+list(APPEND SOURCES_SETS ${SOURCES_ANDROID_PIP})
+list(APPEND SOURCES_SETS ${SOURCES_FORMAT})
+list(APPEND SOURCES_SETS ${SOURCES_UTIL})
+list(APPEND SOURCES_SETS ${SOURCES_PIP})
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
-    set_property(SOURCE ${SOURCES_ROOT} APPEND_STRING PROPERTY COMPILE_FLAGS " -mfpu=neon")
+    set_property(SOURCE ${SOURCES_SETS} APPEND_STRING PROPERTY COMPILE_FLAGS " -mfpu=neon")
     add_definitions("-DHAVE_NEON=1")
 elseif (${ANDROID_ABI} STREQUAL "x86")
-    set_property(SOURCE ${SOURCES_ROOT} APPEND_STRING PROPERTY COMPILE_FLAGS
+    set_property(SOURCE ${SOURCES_SETS} APPEND_STRING PROPERTY COMPILE_FLAGS
             " -mssse3  -Wno-unknown-attributes \
                    -Wno-deprecated-declarations \
                    -Wno-constant-conversion \
@@ -58,7 +58,7 @@ endif ()
 find_library(
         log-lib
         log)
-add_library(${PROJECT_NAME} SHARED ${SOURCES_ROOT})
+add_library(${PROJECT_NAME} SHARED ${SOURCES_SETS})
 target_link_libraries(
         ${PROJECT_NAME}
         PUBLIC

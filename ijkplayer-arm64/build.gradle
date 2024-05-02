@@ -21,7 +21,7 @@ android {
         }
     }
     sourceSets.main {
-        jniLibs.srcDirs 'src/main/libs'
+        jniLibs.srcDirs 'src/main/jni/third_party/ffmpeg'
         jni.srcDirs = [] // This prevents the auto generation of Android.mk
     }
 
