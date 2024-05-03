@@ -3,6 +3,7 @@
 //
 
 #include "ff_downloader.h"
+#include "stdio.h"
 
 FFDownloader *ff_create_downloader(const char *filename, const char *saveDir, const char *saveName) {
     FFDownloader *downloader = av_malloc(sizeof(FFDownloader));
@@ -17,6 +18,17 @@ FFDownloader *ff_create_downloader(const char *filename, const char *saveDir, co
 int ff_free_downloader(FFDownloader *downloader) {
     av_free(downloader);
     return 0;
+}
+
+static AVBSFContext *createFilter(const char *name, AVCodecParameters *codecpar) {
+    const AVBitStreamFilter *bsfilter = av_bsf_get_by_name(name);
+    AVBSFContext *bsf_ctx = NULL;
+    if (bsfilter) {
+        av_bsf_alloc(bsfilter, &bsf_ctx); //AVBSFContext;
+        avcodec_parameters_copy(bsf_ctx->par_in, codecpar);
+        av_bsf_init(bsf_ctx);
+    }
+    return bsf_ctx;
 }
 
 static void copy_stream(AVFormatContext *ic, AVFormatContext *oc, enum AVMediaType type, int *st_index, int *os_index) {
@@ -51,13 +63,44 @@ static void *thread_func(void *arg) {
     }
     av_format_inject_global_side_data(ic);
 
+    char *suffix = "mp4";
+    if (strstr(ic->iformat->name, "hls")) {
+        suffix = "ts";
+    }
     char path[10240];
-    sprintf(path, "%s/%s.%s", downloader->saveDir, downloader->saveName, "mp4");
+    sprintf(path, "%s/%s.%s", downloader->saveDir, downloader->saveName, suffix);
+    ret = remove(path);
+    av_log(NULL, AV_LOG_INFO, "Save path=%s, remove check ret=%d\n", path, ret);
     ret = avformat_alloc_output_context2(&oc, NULL, NULL, path);
     if (ret < 0 || !oc) {
         av_log(NULL, AV_LOG_ERROR, "Could open output context.\n");
         goto fail;
     }
+    if (true) {
+        int orig_nb_streams = ic->nb_streams;
+        do {
+            if (av_stristart(downloader->filename, "data:", NULL) && orig_nb_streams > 0) {
+                int i = 0;
+                for (i = 0; i < orig_nb_streams; i++) {
+                    if (!ic->streams[i] || !ic->streams[i]->codecpar || ic->streams[i]->codecpar->profile == FF_PROFILE_UNKNOWN) {
+                        break;
+                    }
+                }
+
+                if (i == orig_nb_streams) {
+                    break;
+                }
+            }
+            ret = avformat_find_stream_info(ic, NULL);
+        } while(0);
+
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_WARNING,"%s: could not find codec parameters\n", downloader->filename);
+            goto fail;
+        }
+    }
+
+    av_dump_format(ic, 0, downloader->filename, 0);
 
     for (int i = 0; i < ic->nb_streams; i++) {
         AVStream *st = ic->streams[i];
@@ -66,6 +109,7 @@ static void *thread_func(void *arg) {
     }
     copy_stream(ic, oc, AVMEDIA_TYPE_VIDEO, is_index, os_index);
     copy_stream(ic, oc, AVMEDIA_TYPE_AUDIO, is_index, os_index);
+//    AVBSFContext *bsf_ctx = createFilter("h264_mp4toannexb", ic->streams[is_index[AVMEDIA_TYPE_VIDEO]]);
     if (oc && !(oc->flags & AVFMT_NOFILE)) {
         ret = avio_open(&oc->pb, oc->filename, AVIO_FLAG_WRITE);
         if (ret < 0) {
@@ -88,7 +132,10 @@ static void *thread_func(void *arg) {
             av_log(NULL, AV_LOG_WARNING, "%s: req_abort\n", __func__);
             break;
         }
-        int64_t duration = av_rescale_q(ic->streams[pkt->stream_index]->duration, ic->streams[pkt->stream_index]->time_base, AV_TIME_BASE_Q);
+        int64_t duration = ic->duration;
+        if (duration <= 0) {
+            duration = av_rescale_q(ic->streams[pkt->stream_index]->duration, ic->streams[pkt->stream_index]->time_base, AV_TIME_BASE_Q);
+        }
         int64_t pts = av_rescale_q(pkt->pts, ic->streams[pkt->stream_index]->time_base, AV_TIME_BASE_Q);
         if (pkt->stream_index == is_index[AVMEDIA_TYPE_VIDEO]) {
             downloader->progress = pts * 1.0f / duration;

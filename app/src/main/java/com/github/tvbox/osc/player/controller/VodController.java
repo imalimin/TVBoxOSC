@@ -139,6 +139,9 @@ public class VodController extends BaseController {
         mDownloadBtn.setOnClickListener(v -> {
             if (DownloadManager.INSTANCE.startDownload(mUrl, mVodInfo.name, mVodInfo.playIndex, mVodInfo.playFlag) == 0) {
                 Toast.makeText(mActivity, "开始下载", Toast.LENGTH_LONG).show();
+            } else {
+                DownloadManager.INSTANCE.stopDownload(mUrl);
+                Toast.makeText(mActivity, "停止下载", Toast.LENGTH_LONG).show();
             }
         });
         findViewById(R.id.backBtn).setOnClickListener(v -> mActivity.finish());
@@ -358,10 +361,13 @@ public class VodController extends BaseController {
 
     private void updateDownloadProgress() {
         float value = DownloadManager.INSTANCE.getProgress(mUrl);
-        if (value <= 0.001) {
-            return;
+        String str;
+        if (value <= 1e-5) {
+            str = "下载";
+        } else {
+            str = String.format("%.1f", value * 100) + "%";
         }
-        mActivity.runOnUiThread(() -> mDownloadBtn.setText(String.format("%.1f", value * 100) + "%"));
+        mActivity.runOnUiThread(() -> mDownloadBtn.setText(str));
     }
 
     @Override
