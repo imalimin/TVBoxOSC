@@ -19,6 +19,16 @@ int ff_free_downloader(FFDownloader *downloader) {
     return 0;
 }
 
+static void copy_stream(AVFormatContext *ic, AVFormatContext *oc, enum AVMediaType type, int *st_index, int *os_index) {
+    if (st_index[type] >= 0) {
+        AVStream *in_stream = ic->streams[st_index[type]];
+        AVStream *stream = avformat_new_stream(oc, NULL);
+        int ret = avcodec_parameters_copy(stream->codecpar, in_stream->codecpar);
+        av_log(NULL, AV_LOG_INFO, "Copy codecpar ret=%d. index=%d, type=%d.\n", ret, in_stream->index, type);
+        os_index[type] = stream->index;
+    }
+}
+
 static void *thread_func(void *arg) {
     FFDownloader *downloader = arg;
     av_log(NULL, AV_LOG_INFO, "%s: thread start.\n", __func__);
@@ -29,12 +39,13 @@ static void *thread_func(void *arg) {
     AVFormatContext *ic = avformat_alloc_context();
     AVFormatContext *oc = NULL;
     if (!ic) {
-        av_log(NULL, AV_LOG_FATAL, "Could not allocate context.\n");
+        av_log(NULL, AV_LOG_ERROR, "Could not allocate context.\n");
         ret = AVERROR(ENOMEM);
         goto fail;
     }
     ret = avformat_open_input(&ic, downloader->filename, NULL, NULL);
     if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Could not open int.\n");
         print_error(downloader->filename, ret);
         goto fail;
     }
@@ -44,8 +55,7 @@ static void *thread_func(void *arg) {
     sprintf(path, "%s/%s.%s", downloader->saveDir, downloader->saveName, "mp4");
     ret = avformat_alloc_output_context2(&oc, NULL, NULL, path);
     if (ret < 0 || !oc) {
-        av_log(NULL, AV_LOG_FATAL, "Could open output context.\n");
-        ret = AVERROR(ENOMEM);
+        av_log(NULL, AV_LOG_ERROR, "Could open output context.\n");
         goto fail;
     }
 
@@ -62,21 +72,12 @@ static void *thread_func(void *arg) {
                                 st_index[AVMEDIA_TYPE_AUDIO],
                                 st_index[AVMEDIA_TYPE_VIDEO],
                                 NULL, 0);
-    if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
-        AVStream *stream = avformat_new_stream(oc, NULL);
-//        avcodec_copy_context(ic->streams[st_index[AVMEDIA_TYPE_VIDEO]]->codec, stream->codec);
-        ret = avcodec_parameters_from_context(stream->codecpar, ic->streams[st_index[AVMEDIA_TYPE_VIDEO]]->codec);
-        os_index[AVMEDIA_TYPE_VIDEO] = stream->index;
-    }
-    if (st_index[AVMEDIA_TYPE_AUDIO] > 0) {
-        AVStream *stream = avformat_new_stream(oc, NULL);
-//        avcodec_copy_context(ic->streams[st_index[AVMEDIA_TYPE_AUDIO]]->codec, stream->codec);
-        ret = avcodec_parameters_from_context(stream->codecpar, ic->streams[st_index[AVMEDIA_TYPE_AUDIO]]->codec);
-        os_index[AVMEDIA_TYPE_AUDIO] = stream->index;
-    }
+    copy_stream(ic, oc, AVMEDIA_TYPE_VIDEO, st_index, os_index);
+    copy_stream(ic, oc, AVMEDIA_TYPE_AUDIO, st_index, os_index);
     if (oc && !(oc->flags & AVFMT_NOFILE)) {
         ret = avio_open(&oc->pb, oc->filename, AVIO_FLAG_WRITE);
         if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Could not open output io.\n");
             print_error(downloader->filename, ret);
             goto fail;
         }
@@ -84,6 +85,7 @@ static void *thread_func(void *arg) {
 
     ret = avformat_write_header(oc, NULL);
     if (ret < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Could not write header.\n");
         print_error(downloader->filename, ret);
         goto fail;
     }
@@ -99,8 +101,8 @@ static void *thread_func(void *arg) {
         if (pkt->stream_index == st_index[AVMEDIA_TYPE_VIDEO]) {
             downloader->progress = pts * 1.0f / duration;
         }
-        av_log(NULL, AV_LOG_DEBUG, "%s: av_read_frame. ret=%d, %" PRId64 "/%" PRId64 ", progress=%0.2f\n",
-               __func__, ret, pts, duration, downloader->progress * 100);
+        av_log(NULL, AV_LOG_DEBUG, "%s: av_read_frame. ret=%d, flags=%d, %" PRId64 "/%" PRId64 ", progress=%0.2f\n",
+               __func__, ret, pkt->flags, pts, duration, downloader->progress * 100);
         int type = ic->streams[pkt->stream_index]->codecpar->codec_type;
         int stream_index = os_index[type];
         if (stream_index >= 0) {

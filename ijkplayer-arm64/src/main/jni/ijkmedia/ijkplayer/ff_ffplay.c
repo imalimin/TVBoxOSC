@@ -3061,6 +3061,7 @@ static int is_realtime(AVFormatContext *s)
 static int read_thread(void *arg)
 {
     FFPlayer *ffp = arg;
+    av_log(NULL, AV_LOG_INFO, "Play filename=%s\n", ffp->input_filename);
     VideoState *is = ffp->is;
     AVFormatContext *ic = NULL;
     int err, i, ret __unused;
