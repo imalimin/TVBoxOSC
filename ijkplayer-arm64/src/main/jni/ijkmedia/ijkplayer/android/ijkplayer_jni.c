@@ -39,6 +39,7 @@
 #include "ijksdl/android/ijksdl_android_jni.h"
 #include "ijksdl/android/ijksdl_codec_android_mediadef.h"
 #include "ijkavformat/ijkavformat.h"
+#include "ff_downloader.h"
 
 #define JNI_MODULE_PACKAGE      "tv/danmaku/ijk/media/player"
 #define JNI_CLASS_IJKPLAYER     "tv/danmaku/ijk/media/player/IjkMediaPlayer"
@@ -1127,9 +1128,30 @@ LABEL_RETURN:
     return;
 }
 
+static long
+IjkMediaPlayer_startDownload(JNIEnv *env, jobject thiz, jstring filename, jstring saveDir) {
+    const char *c_filename = (*env)->GetStringUTFChars(env, filename, NULL);
+    const char *c_saveDir = (*env)->GetStringUTFChars(env, saveDir, NULL);
+    FFDownloader *downloader = ff_create_downloader(c_filename, c_saveDir);
+    ff_start_download(downloader);
+    return (long) downloader;
+}
 
+static void IjkMediaPlayer_stopDownload(JNIEnv *env, jobject thiz, jlong handle) {
+    if (handle != NULL) {
+        FFDownloader *downloader = (FFDownloader *) handle;
+        ff_stop_download(downloader);
+        ff_free_downloader(downloader);
+    }
+}
 
-
+static float IjkMediaPlayer_getDownloadProgress(JNIEnv *env, jobject thiz, jlong handle) {
+    if (handle != NULL) {
+        FFDownloader *downloader = (FFDownloader *) handle;
+        return downloader->progress;
+    }
+    return 0.0f;
+}
 
 // ----------------------------------------------------------------------------
 
@@ -1180,6 +1202,9 @@ static JNINativeMethod g_methods[] = {
 
     { "native_setLogLevel",     "(I)V",                     (void *) IjkMediaPlayer_native_setLogLevel },
     { "_setFrameAtTime",        "(Ljava/lang/String;JJII)V", (void *) IjkMediaPlayer_setFrameAtTime },
+    { "native_startDownload",        "(Ljava/lang/String;Ljava/lang/String;)J", (void *) IjkMediaPlayer_startDownload },
+    { "native_stopDownload",        "(J)V", (void *) IjkMediaPlayer_stopDownload },
+    { "native_getDownloadProgress",        "(J)F", (void *) IjkMediaPlayer_getDownloadProgress },
 };
 
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved)

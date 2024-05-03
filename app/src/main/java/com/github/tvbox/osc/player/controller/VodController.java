@@ -9,6 +9,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -19,6 +20,7 @@ import com.github.tvbox.osc.bean.IJKCode;
 import com.github.tvbox.osc.bean.ParseBean;
 import com.github.tvbox.osc.player.thirdparty.MXPlayer;
 import com.github.tvbox.osc.player.thirdparty.ReexPlayer;
+import com.github.tvbox.osc.server.DownloadManager;
 import com.github.tvbox.osc.ui.adapter.ParseAdapter;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.PlayerHelper;
@@ -54,10 +56,12 @@ public class VodController extends BaseController {
                     }
                     case 1002: { // 显示底部菜单
                         mBottomRoot.setVisibility(VISIBLE);
+                        mToolBar.setVisibility(VISIBLE);
                         break;
                     }
                     case 1003: { // 隐藏底部菜单
                         mBottomRoot.setVisibility(GONE);
+                        mToolBar.setVisibility(GONE);
                         break;
                     }
                     case 1004: { // 设置速度
@@ -76,6 +80,8 @@ public class VodController extends BaseController {
             }
         };
     }
+
+    private String mUrl;
 
     SeekBar mSeekBar;
     TextView mCurrentTime;
@@ -99,6 +105,8 @@ public class VodController extends BaseController {
     TextView mPlayerTimeSkipBtn;
     TextView mPlayerTimeStepBtn;
     TextView mInfoView;
+    private TextView mDownloadBtn;
+    private View mToolBar;
 
     @Override
     protected void initView() {
@@ -124,6 +132,14 @@ public class VodController extends BaseController {
         mPlayerTimeSkipBtn = findViewById(R.id.play_time_end);
         mPlayerTimeStepBtn = findViewById(R.id.play_time_step);
         mInfoView = findViewById(R.id.infoView);
+        mToolBar = findViewById(R.id.toolBar);
+        mDownloadBtn = findViewById(R.id.downloadBtn);
+        mDownloadBtn.setOnClickListener(v -> {
+            if (DownloadManager.INSTANCE.startDownload(mActivity, mUrl) == 0) {
+                Toast.makeText(mActivity, "开始下载", Toast.LENGTH_LONG).show();
+            }
+        });
+        findViewById(R.id.backBtn).setOnClickListener(v -> mActivity.finish());
 
         mGridView.setLayoutManager(new V7LinearLayoutManager(getContext(), 0, false));
         ParseAdapter parseAdapter = new ParseAdapter();
@@ -333,6 +349,18 @@ public class VodController extends BaseController {
         });
     }
 
+    public void setUrl(String url) {
+        mUrl = url;
+    }
+
+    private void updateDownloadProgress() {
+        float value = DownloadManager.INSTANCE.getProgress(mUrl);
+        if (value <= 0.001) {
+            return;
+        }
+        mActivity.runOnUiThread(() -> mDownloadBtn.setText(String.format("%.1f", value * 100) + "%"));
+    }
+
     @Override
     protected int getLayoutId() {
         return R.layout.player_vod_control_view;
@@ -436,6 +464,7 @@ public class VodController extends BaseController {
         } else {
             mSeekBar.setSecondaryProgress(percent * 10);
         }
+        updateDownloadProgress();
     }
 
     private boolean simSlideStart = false;

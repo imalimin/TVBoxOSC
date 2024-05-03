@@ -4,12 +4,18 @@
 
 #include "ff_downloader.h"
 
-FFDownloader *ff_create_downloader(const char *filename) {
+FFDownloader *ff_create_downloader(const char *filename, const char *saveDir) {
     FFDownloader *downloader = av_malloc(sizeof(FFDownloader));
     memset(downloader, 0, sizeof(FFDownloader));
     downloader->filename = filename;
-    av_log(NULL, AV_LOG_INFO, "%s: filename=%s\n", __func__, filename);
+    downloader->saveDir = saveDir;
+    av_log(NULL, AV_LOG_INFO, "%s: filename=%s, saveDir=%s\n", __func__, filename, saveDir);
     return downloader;
+}
+
+int ff_free_downloader(FFDownloader *downloader) {
+    av_free(downloader);
+    return 0;
 }
 
 static void *thread_func(void *arg) {
@@ -33,8 +39,9 @@ static void *thread_func(void *arg) {
     }
     av_format_inject_global_side_data(ic);
 
-    const char *dir = "/storage/emulated/0/Android/data/com.github.tvbox.osc/cache/111.mp4";
-    ret = avformat_alloc_output_context2(&oc, NULL, NULL, dir);
+    char path[10240];
+    sprintf(path, "%s/%s", downloader->saveDir, "111.mp4");
+    ret = avformat_alloc_output_context2(&oc, NULL, NULL, path);
     if (ret < 0 || !oc) {
         av_log(NULL, AV_LOG_FATAL, "Could open output context.\n");
         ret = AVERROR(ENOMEM);
@@ -130,4 +137,10 @@ int ff_start_download(FFDownloader *downloader) {
     int ret = pthread_create(&downloader->thread_t, NULL, thread_func, downloader);
     av_log(NULL, AV_LOG_INFO, "%s: start thread ret=%d\n", __func__, ret);
     return ret;
+}
+
+int ff_stop_download(FFDownloader *downloader) {
+    downloader->req_abort = 1;
+    pthread_join(downloader->thread_t, NULL);
+    return 0;
 }

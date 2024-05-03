@@ -1284,4 +1284,8 @@ public final class IjkMediaPlayer extends AbstractMediaPlayer {
     public static native void native_profileBegin(String libName);
     public static native void native_profileEnd();
     public static native void native_setLogLevel(int level);
+
+    public static native long native_startDownload(String filename, String saveDir);
+    public static native void native_stopDownload(long handle);
+    public static native float native_getDownloadProgress(long handle);
 }

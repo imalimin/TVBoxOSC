@@ -7,11 +7,16 @@
 
 typedef struct _FFDownloader {
     const char *filename;
+    const char *saveDir;
     pthread_t thread_t;
     int req_abort;
     float progress;
 } FFDownloader;
 
-FFDownloader *ff_create_downloader(const char *filename);
+FFDownloader *ff_create_downloader(const char *filename, const char *saveDir);
+
+int ff_free_downloader(FFDownloader *downloader);
 
 int ff_start_download(FFDownloader *downloader);
+
+int ff_stop_download(FFDownloader *downloader);

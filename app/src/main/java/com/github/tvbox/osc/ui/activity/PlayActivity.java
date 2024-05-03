@@ -260,6 +260,7 @@ public class PlayActivity extends BaseActivity {
                         } else {
                             mVideoView.setUrl(url);
                         }
+                        mController.setUrl(url);
                         Log.i("aliminabc", "url=" + url + ", " + (headers != null ? headers.size() : 0));
                         mVideoView.start();
                         mController.resetSpeed();
