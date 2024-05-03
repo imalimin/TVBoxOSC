@@ -33,7 +33,7 @@ static void *thread_func(void *arg) {
     FFDownloader *downloader = arg;
     av_log(NULL, AV_LOG_INFO, "%s: thread start.\n", __func__);
     int ret = 0;
-    int st_index[AVMEDIA_TYPE_NB];
+    int is_index[AVMEDIA_TYPE_NB];
     int os_index[AVMEDIA_TYPE_NB];
     AVPacket pkt1, *pkt = &pkt1;
     AVFormatContext *ic = avformat_alloc_context();
@@ -62,18 +62,10 @@ static void *thread_func(void *arg) {
     for (int i = 0; i < ic->nb_streams; i++) {
         AVStream *st = ic->streams[i];
         enum AVMediaType type = st->codecpar->codec_type;
-        st_index[type] = i;
+        is_index[type] = i;
     }
-    st_index[AVMEDIA_TYPE_VIDEO] =
-            av_find_best_stream(ic, AVMEDIA_TYPE_VIDEO,
-                                st_index[AVMEDIA_TYPE_VIDEO], -1, NULL, 0);
-    st_index[AVMEDIA_TYPE_AUDIO] =
-            av_find_best_stream(ic, AVMEDIA_TYPE_AUDIO,
-                                st_index[AVMEDIA_TYPE_AUDIO],
-                                st_index[AVMEDIA_TYPE_VIDEO],
-                                NULL, 0);
-    copy_stream(ic, oc, AVMEDIA_TYPE_VIDEO, st_index, os_index);
-    copy_stream(ic, oc, AVMEDIA_TYPE_AUDIO, st_index, os_index);
+    copy_stream(ic, oc, AVMEDIA_TYPE_VIDEO, is_index, os_index);
+    copy_stream(ic, oc, AVMEDIA_TYPE_AUDIO, is_index, os_index);
     if (oc && !(oc->flags & AVFMT_NOFILE)) {
         ret = avio_open(&oc->pb, oc->filename, AVIO_FLAG_WRITE);
         if (ret < 0) {
@@ -98,7 +90,7 @@ static void *thread_func(void *arg) {
         }
         int64_t duration = av_rescale_q(ic->streams[pkt->stream_index]->duration, ic->streams[pkt->stream_index]->time_base, AV_TIME_BASE_Q);
         int64_t pts = av_rescale_q(pkt->pts, ic->streams[pkt->stream_index]->time_base, AV_TIME_BASE_Q);
-        if (pkt->stream_index == st_index[AVMEDIA_TYPE_VIDEO]) {
+        if (pkt->stream_index == is_index[AVMEDIA_TYPE_VIDEO]) {
             downloader->progress = pts * 1.0f / duration;
         }
         av_log(NULL, AV_LOG_DEBUG, "%s: av_read_frame. ret=%d, flags=%d, %" PRId64 "/%" PRId64 ", progress=%0.2f\n",
