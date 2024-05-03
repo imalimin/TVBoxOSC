@@ -1,10 +1,7 @@
 package com.github.tvbox.osc.server;
 
-import android.content.Context;
-
-import java.util.ArrayList;
+import java.io.File;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,17 +10,19 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer;
 
 public enum DownloadManager {
     INSTANCE;
-    public static final ExecutorService spThreadPool = Executors.newSingleThreadExecutor();
     private final Map<String, Long> map = new HashMap<>();
 
-    public int startDownload(Context context, String url) {
+    public int startDownload(String url, String name, int index, String channel) {
         if (url == null || url.isEmpty()) {
             return -1;
         }
-        String dir = context.getExternalCacheDir().getAbsolutePath();
+        File dir = new File("/sdcard/Download/" + name);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
         synchronized (map) {
             if (!map.containsKey(url)) {
-                long handle = IjkMediaPlayer.native_startDownload(url, dir);
+                long handle = IjkMediaPlayer.native_startDownload(url, dir.getAbsolutePath(), String.format("%s_%03d_%s", name, index + 1, channel));
                 map.put(url, handle);
                 return 0;
             } else {

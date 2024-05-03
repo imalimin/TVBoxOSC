@@ -4,12 +4,13 @@
 
 #include "ff_downloader.h"
 
-FFDownloader *ff_create_downloader(const char *filename, const char *saveDir) {
+FFDownloader *ff_create_downloader(const char *filename, const char *saveDir, const char *saveName) {
     FFDownloader *downloader = av_malloc(sizeof(FFDownloader));
     memset(downloader, 0, sizeof(FFDownloader));
     downloader->filename = filename;
     downloader->saveDir = saveDir;
-    av_log(NULL, AV_LOG_INFO, "%s: filename=%s, saveDir=%s\n", __func__, filename, saveDir);
+    downloader->saveName = saveName;
+    av_log(NULL, AV_LOG_INFO, "%s: filename=%s, saveDir=%s, saveName=%s\n", __func__, filename, saveDir, saveName);
     return downloader;
 }
 
@@ -40,7 +41,7 @@ static void *thread_func(void *arg) {
     av_format_inject_global_side_data(ic);
 
     char path[10240];
-    sprintf(path, "%s/%s", downloader->saveDir, "111.mp4");
+    sprintf(path, "%s/%s.%s", downloader->saveDir, downloader->saveName, "mp4");
     ret = avformat_alloc_output_context2(&oc, NULL, NULL, path);
     if (ret < 0 || !oc) {
         av_log(NULL, AV_LOG_FATAL, "Could open output context.\n");
@@ -98,7 +99,7 @@ static void *thread_func(void *arg) {
         if (pkt->stream_index == st_index[AVMEDIA_TYPE_VIDEO]) {
             downloader->progress = pts * 1.0f / duration;
         }
-        av_log(NULL, AV_LOG_INFO, "%s: av_read_frame. ret=%d, %" PRId64 "/%" PRId64 ", progress=%0.2f\n",
+        av_log(NULL, AV_LOG_DEBUG, "%s: av_read_frame. ret=%d, %" PRId64 "/%" PRId64 ", progress=%0.2f\n",
                __func__, ret, pts, duration, downloader->progress * 100);
         int type = ic->streams[pkt->stream_index]->codecpar->codec_type;
         int stream_index = os_index[type];

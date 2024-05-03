@@ -1129,10 +1129,11 @@ LABEL_RETURN:
 }
 
 static long
-IjkMediaPlayer_startDownload(JNIEnv *env, jobject thiz, jstring filename, jstring saveDir) {
+IjkMediaPlayer_startDownload(JNIEnv *env, jobject thiz, jstring filename, jstring saveDir, jstring saveName) {
     const char *c_filename = (*env)->GetStringUTFChars(env, filename, NULL);
     const char *c_saveDir = (*env)->GetStringUTFChars(env, saveDir, NULL);
-    FFDownloader *downloader = ff_create_downloader(c_filename, c_saveDir);
+    const char *c_saveName = (*env)->GetStringUTFChars(env, saveName, NULL);
+    FFDownloader *downloader = ff_create_downloader(c_filename, c_saveDir, c_saveName);
     ff_start_download(downloader);
     return (long) downloader;
 }
@@ -1202,7 +1203,7 @@ static JNINativeMethod g_methods[] = {
 
     { "native_setLogLevel",     "(I)V",                     (void *) IjkMediaPlayer_native_setLogLevel },
     { "_setFrameAtTime",        "(Ljava/lang/String;JJII)V", (void *) IjkMediaPlayer_setFrameAtTime },
-    { "native_startDownload",        "(Ljava/lang/String;Ljava/lang/String;)J", (void *) IjkMediaPlayer_startDownload },
+    { "native_startDownload",        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)J", (void *) IjkMediaPlayer_startDownload },
     { "native_stopDownload",        "(J)V", (void *) IjkMediaPlayer_stopDownload },
     { "native_getDownloadProgress",        "(J)F", (void *) IjkMediaPlayer_getDownloadProgress },
 };

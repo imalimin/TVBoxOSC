@@ -18,6 +18,7 @@ import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.bean.IJKCode;
 import com.github.tvbox.osc.bean.ParseBean;
+import com.github.tvbox.osc.bean.VodInfo;
 import com.github.tvbox.osc.player.thirdparty.MXPlayer;
 import com.github.tvbox.osc.player.thirdparty.ReexPlayer;
 import com.github.tvbox.osc.server.DownloadManager;
@@ -82,6 +83,7 @@ public class VodController extends BaseController {
     }
 
     private String mUrl;
+    private VodInfo mVodInfo;
 
     SeekBar mSeekBar;
     TextView mCurrentTime;
@@ -135,7 +137,7 @@ public class VodController extends BaseController {
         mToolBar = findViewById(R.id.toolBar);
         mDownloadBtn = findViewById(R.id.downloadBtn);
         mDownloadBtn.setOnClickListener(v -> {
-            if (DownloadManager.INSTANCE.startDownload(mActivity, mUrl) == 0) {
+            if (DownloadManager.INSTANCE.startDownload(mUrl, mVodInfo.name, mVodInfo.playIndex, mVodInfo.playFlag) == 0) {
                 Toast.makeText(mActivity, "开始下载", Toast.LENGTH_LONG).show();
             }
         });
@@ -349,8 +351,9 @@ public class VodController extends BaseController {
         });
     }
 
-    public void setUrl(String url) {
+    public void setVodInfo(String url, VodInfo info) {
         mUrl = url;
+        mVodInfo = info;
     }
 
     private void updateDownloadProgress() {
