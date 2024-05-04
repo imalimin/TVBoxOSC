@@ -35,6 +35,7 @@ static void copy_stream(AVFormatContext *ic, AVFormatContext *oc, enum AVMediaTy
     if (st_index[type] >= 0) {
         AVStream *in_stream = ic->streams[st_index[type]];
         AVStream *stream = avformat_new_stream(oc, NULL);
+        stream->time_base = in_stream->time_base;
         int ret = avcodec_parameters_copy(stream->codecpar, in_stream->codecpar);
         av_log(NULL, AV_LOG_INFO, "Copy codecpar ret=%d. index=%d, type=%d.\n", ret, in_stream->index, type);
         os_index[type] = stream->index;
